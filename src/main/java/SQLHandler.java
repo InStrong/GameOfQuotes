@@ -5,6 +5,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class SQLHandler {
     private static final String url = "jdbc:mysql://localhost:3306/game_of_quotes?autoReconnect=true&useSSL=false&ftimeCode=false&serverTimezone=UTC";
@@ -65,64 +67,6 @@ public class SQLHandler {
         }
     }
 
-//    protected void plusPoint(String userName){
-//        String query = "UPDATE game_of_quotes.score SET score = score + 1 WHERE id='"+userName+"'";
-//        try {
-//            stmt.executeUpdate(query);
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    protected void minusPoint(String userName){
-//        String query = "UPDATE game_of_quotes.score SET score = score - 1 WHERE id='"+userName+"'";
-//        try {
-//            stmt.executeUpdate(query);
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
-
-//    protected String upTo20Spaces(String s){
-//        StringBuilder sb = new StringBuilder();
-//        char[] str = s.toCharArray();
-//        for (int i = 0; i < s.length(); i++) {
-//            if (str[i]!='_') {
-//                sb.append(str[i]);
-//            }
-//            else sb.append("_");
-//        }
-//        do{
-//            sb.append(" ");
-//        } while (sb.toString().length()==25);
-//        return sb.toString();
-//    }
-//
-//    protected String top10(){
-//        StringBuilder sb= new StringBuilder();
-//        int i=1;
-//        String query = "SELECT * FROM game_of_quotes.score order by score DESC LIMIT 10";
-//
-//        try {
-//            ResultSet rs = stmt.executeQuery(query);
-//            while (rs.next()){
-//                sb.append(i++);
-//                sb.append(". ");
-//                sb.append("@");
-//                sb.append(upTo20Spaces(rs.getString(1)));
-//                sb.append(" : ").append(rs.getInt(3)).append(" монет");
-//                sb.append(System.lineSeparator());
-//            }
-//
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
-//        return sb.toString();
-//    }
-//
-//
-//
     protected void addFoundedQuote(Long chatId,int quoteId){
         String query = "INSERT INTO game_of_quotes.founded_quotes (chatId,quoteId) VALUES ('"+chatId+"','"+quoteId+"')";
         try {
@@ -152,37 +96,44 @@ public class SQLHandler {
         return false;
 
     }
-//
-//    protected int currentScore(String userId){
-//        String query = "select score from score where id='"+userId+"'";
-//        int currentScore=0;
-//        try {
-//            rs = stmt.executeQuery(query);
-//            while (rs.next()) {
-//                currentScore = rs.getInt(1);
-//            }
-//        }catch(SQLException e){
-//            e.printStackTrace();
-//
-//        }
-//        return currentScore;
-//
-//    }
-//
-//    protected void info() {
-//        String query = "select id,FirstName,score from score";
-//
-//        try {
-//            rs = stmt.executeQuery(query);
-//            while (rs.next()) {
-//                String id = rs.getString(1);
-//                String firstName = rs.getString(2);
-//                int score = rs.getInt(3);
-//                System.out.printf("id: %s, name: %s, score: %d %n", id, firstName, score);
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//
-//        }
-//    }
+
+    protected ArrayList<String> getQuote(Long chatId){
+        ArrayList<String> quote = new ArrayList<>();
+        int countOfQuotes=0;
+        String query = "SELECT * FROM game_of_quotes.quotes ";
+        try {
+            ResultSet rs = stmt.executeQuery(query);
+            while (rs.next()) {
+                countOfQuotes++;
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
+        }
+        Random ran = new Random();
+
+
+        String query2 = "SELECT * FROM game_of_quotes.quotes ORDER BY RAND() LIMIT 1";
+        try {
+            rs = stmt.executeQuery(query2);
+            while (rs.next()) {
+                quote.add(rs.getString(2));
+                quote.add(rs.getString(1));
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
+        }
+
+        String query3 = "SELECT * FROM game_of_quotes.characters ORDER BY RAND() LIMIT 3";
+        try {
+            rs = stmt.executeQuery(query3);
+            while (rs.next()) {
+                quote.add(rs.getString(2));
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
+        }
+
+        return quote;
+
+    }
 }

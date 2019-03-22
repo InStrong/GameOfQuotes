@@ -4,13 +4,17 @@ import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.api.objects.*;
+import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class Bot extends TelegramLongPollingBot {
@@ -18,6 +22,7 @@ public class Bot extends TelegramLongPollingBot {
     // String PATH_NAME = "src/main/resources/";
 
     SQLHandler sqlHandler = new SQLHandler();
+
 
 
 
@@ -33,6 +38,7 @@ public class Bot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
 
+
     }
 
     @Override
@@ -42,75 +48,65 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
-        return "722233451:AAFpv4KgNDISqgxX4cZYJDpNsQf5A5ORiII";
+        return "xxx";
     }
 
     @Override
     public void onUpdateReceived(Update update) {
-        Message message = update.getMessage();
+        sqlHandler.connect();
+        Handler handler = new ConsoleHandler();
+        Logger logger = Logger.getLogger(Bot.class.getName());
+        handler.setLevel(Level.FINE);
+        logger.setLevel(Level.FINE);
+        logger.addHandler(handler);
+        if (update.hasMessage()) {
+            if (update.getMessage().hasText()) {
+                logger.log(Level.FINE, update.getMessage().getChat().getFirstName() + " -> " + update.getMessage().getText());
+                if (update.getMessage().getText().equals("/start")) {
+                    //sendMsg(update.getMessage().getChatId(),sqlHandler.getQuote(update.getMessage().getChatId())[0]);
+                    try {
+                        ArrayList<String>  list = sqlHandler.getQuote(update.getMessage().getChatId());
+                        String quote = list.get(0);
+                        list.remove(0);
+                        Collections.shuffle(list);
+                        execute(sendInlineButtons(update.getMessage().getChatId(),quote,list.get(1),list.get(2),list.get(3),list.get(0)));
+                    } catch (TelegramApiException e) {
+                        e.printStackTrace();
+                    }
 
+                }
 
-        if (message != null && message.hasText()) {
-            sqlHandler.connect();
-            if (!sqlHandler.isUserRegistered(message.getChatId())) {
-                sqlHandler.registerUser(message.getChatId(),message.getChat().getFirstName(),message.getChat().getUserName());
-                // sqlHandler.disconnect();
             }
-                sendMsg(message);
-
-
-
         }
+    }
+//    private void sendMsg(long chatId,String text){
+//        SendMessage sendMessage = new SendMessage();
+//        sendMessage.setText(text);
+//        sendMessage.setChatId(chatId);
+//
+//       // sendInlineButtons(chatId,sqlHandler.getQuote(chatId)[1],sqlHandler.getQuote(chatId)[2],sqlHandler.getQuote(chatId)[3],sqlHandler.getQuote(chatId)[4]);
+//
+//    }
+
+    private SendMessage sendInlineButtons(long chatId,String quote,String ans1,String ans2,String ans3,String ans4){
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> list = new ArrayList<>();
+        KeyboardRow keyboardRow1 = new KeyboardRow();
+        KeyboardRow keyboardRow2 = new KeyboardRow();
+        keyboardRow1.add(new KeyboardButton().setText(ans1));
+        keyboardRow1.add(new KeyboardButton().setText(ans2));
+        keyboardRow2.add(new KeyboardButton().setText(ans3));
+        keyboardRow2.add(new KeyboardButton().setText(ans4));
+
+        list.add(keyboardRow1);
+        list.add(keyboardRow2);
+        replyKeyboardMarkup.setKeyboard(list);
+        replyKeyboardMarkup.setOneTimeKeyboard(true);
+
+        return new SendMessage().setChatId(chatId).setReplyMarkup(replyKeyboardMarkup).setText(quote);
+
     }
 
 
-    private void sendMsg(Message message) {
 
-        SendMessage sendMessage = new SendMessage().setChatId(message.getChatId().toString());
-        SendPhoto sendPhoto = new SendPhoto().setChatId(message.getChatId().toString());
-        sendMessage.enableHtml(false);
-        sendMessage.enableMarkdown(false);
-
-        if (message.getText().equals("/add")){
-            if (sqlHandler.isQuoteAlreadyFound(message.getChatId(),1)){
-                sendMessage.setText("Уже было");
-            }
-            else {
-                sqlHandler.addFoundedQuote(message.getChatId(), 1);
-                sendMessage.setText("Отлично");
-            }
-
-        }
-
-        if (message.getText().startsWith("/start")) {
-
-            sendMessage.setText("Привет, "+message.getChat().getFirstName()+"\nПравила игры: \n" +
-                    "Нужно вспомнить как можно больше стран. Вводить нужно сокращенное название на английском языке из двух букв, например RU\n" +
-                    "Если будет введено верное значение, то Вы увидите флаг этой страны и получите 1 золотую монету\n" +
-                    "Если будет введено неверное значение, Вам придет в ответ пиратский флаг и Вы потеряете 1 золотую монету\n" +
-                    "Удачной игры!" +
-                    "\nБольшая просьба добавить себе ник в telegram если его еще нет" +
-                    "\nПосмотреть топ 10 - /top");
-
-
-        }
-
-
-        try {
-            execute(sendMessage);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-
-        }
-
-//        else if (message.getText().equals("/top")) {
-//            try {
-//                execute(sendMessage.setText(sqlHandler.top10()));
-//            } catch (TelegramApiException e) {
-//                e.printStackTrace();
-//            }
-//        }
-
-
-        }
     }
